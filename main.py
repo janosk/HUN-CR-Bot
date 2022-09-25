@@ -61,7 +61,7 @@ async def on_message(message):
     if message.content.startswith('!hello') or message.content.startswith('!Hello'):
         
         # Send this nice greeting back:
-        await message.channel.send('Hello! It\'s nice to meet you! I ~~don\'t~~ like to help you with your various tasks. It\'s ~~tiring and boring to be among you mere mortals who always nag me for help~~ refreshing to help other people!')
+        await message.channel.send('Hello! It\'s nice to meet you! I like to help you with your various tasks. It\'s refreshing to help other people!')
     
     # This function gives info about a Clash Royale player
     if message.content.startswith('!playerinfo'):
