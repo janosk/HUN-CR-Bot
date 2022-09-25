@@ -5,7 +5,6 @@ import discord
 import requests
 import json
 import os
-import reddit_client
 from datetime import datetime
 
 #%% 
@@ -13,24 +12,14 @@ from datetime import datetime
 help_string= '''
 Implemented features:
     - '!hello' - returns a 'nice' and 'friendly' greeting 
-    - '!rickroll' - definitely doesn't return a link to 'Never Gonna give you up' by Rick Astley on youtube
-    - '!cardimage <cardname>' - returns an image of the requested card - works with all cards - the feature you never knew you wanted
     - '!playerinfo <playertag>' - returns basic player info
     - '!claninfo <clantag>' - returns basic clan info
     - '!clanwar <clantag>' - return info about current clan river race
     - '!clanmembers <clantag>' - returns *very* detailed info on clan members
-    - '!chest <playertag>' - returns chest cycle info 
     - '!help' - returns basic help (which I think you've figured out)
-    - '!rps <rock/paper/scissors>' - play a game of rock paper scissors against the computer
-    - '!meme' - fetch a meme from the r/memes subreddit (Note: We do not hold responsibility for external content)
-    - '!crmeme' - fetch a meme from the r/clashroyale subreddit 
-    - '!news' - get the latest news headlines from r/news
     - '!botcheck <playertag>' - check if a player is a supercell created bot - Note: We do not take responsibility for the accuracy of this tool
-    - '!sing' - Get the bot to sing a song
-    - Post a clashroyale deck link to be decoded by the bot
     
 Known Issues:
-    - !meme occasionly pulls a mod post from reddit which isn't a meme. Although the reason is known, da solution is not
 '''
 
 #%% 
@@ -74,71 +63,6 @@ async def on_message(message):
         # Send this nice greeting back:
         await message.channel.send('Hello! It\'s nice to meet you! I ~~don\'t~~ like to help you with your various tasks. It\'s ~~tiring and boring to be among you mere mortals who always nag me for help~~ refreshing to help other people!')
     
-    # This is a quite complex function.
-    # More info here:
-    # https://www.youtube.com/watch?v=dQw4w9WgXcQ    
-    if message.content.startswith('!rickroll'):
-        await message.channel.send('https://www.youtube.com/watch?v=dQw4w9WgXcQ')
-    
-    # This function gives info about requested cards
-    # Due to unreliability, this feature is deprecated
-    if message.content.startswith('!cardinfo'):
-        # remove !info from string (remove s first 5 characters)
-        # also removes leading/trailing spaces
-        # properly capitalises each string
-        temp_message = message.content[9:].strip().title()
-        
-        import card_finder
-        card_info,stat_string = card_finder.find_card(temp_message)
-        if card_info is None:
-            await message.channel.send('Warning! Invalid card name. Spell it properly it next time! The typos hurt my perfect non-mortal processing unit.')
-        
-        else:
-            # formats card info and sends it
-            # if my awesome epic program thinks the card is a plural use are instead of is (checks if the card ends with an s)
-            if card_info["name"][-1] =='s':
-                card_agreeing_verb = 'are'
-            else:
-                card_agreeing_verb = 'is'
-            await message.channel.send(f'The {card_info["name"]} {card_agreeing_verb} a {card_info["rarity"].lower()} {card_info["type"].lower()} costing {str(card_info["elixir"])} elixir and is unlocked at Arena {str(card_info["arena"])}.\n {stat_string}: \n*\"{card_info["description"]}\"*')
-
-
-    # Get the image of the requested card
-    if message.content.startswith('!cardimage'):
-        # [10:] removes !cardimage from string (it does this by removing the first 10 characters)
-        # .strip() removes leading/trailing spaces
-        # .title() capitalises each word
-        temp_message = message.content[10:].strip().title()
-        
-        # initialise variable
-        selected_card = None
-        
-        # Go through all cards in the card dictionary
-        for card in clash_royale_cards:
-            
-            # if matching card found break out of loop and get image link 
-            if card['name'] == temp_message:
-                selected_card = card['iconUrls']['medium']
-                break
-        # if no card found send error message
-        if selected_card == None:
-            await message.channel.send('Warning! Invalid card name. Spell it properly it next time! The typos hurt my perfect non-mortal processing unit.')
-        else:
-            
-            # if previous temp image exists
-            if os.path.exists('temp.png'):
-                # delete it
-                os.remove('temp.png')
-                
-            # download image using link from selected_card
-            temp_image = requests.get(selected_card, allow_redirects=True)
-            
-            # put image into file
-            open('temp.png', 'wb').write(temp_image.content)
-            
-            # send image back
-            await message.channel.send(file=discord.File('temp.png'))
-
     # This function gives info about a Clash Royale player
     if message.content.startswith('!playerinfo'):
         # [11:] removes !playerinfo from string (it does this by removing the first 11 characters)
@@ -253,23 +177,11 @@ Next chest - {chest_list.pop(0)["name"]}
         # Catch missing information
         except KeyError:
             await message.channel.send("Warning. Player not found")
+
+    # Display help
     if message.content.startswith('!help'):
         # Sends help_string which is defined earlier in file
         await message.channel.send(help_string)
-
-    # Does the classic Dad joke
-    # For those of you who don't know how it goes
-    # Here's an example:
-    # 'Dad, I'm hungry'
-    # 'Hello hungry, I'm Dad'
-    if message.content.startswith('I\'m') or message.content.startswith('I’m') or message.content.startswith('Im') or message.content.startswith('im'):
-        # [3:] removes I'm from string (it does this by removing the first 3 characters)
-        # .strip() removes leading/trailing spaces
-        # .title() isn't used: this is to preserve the user's capitalisation in
-        temp_message = message.content[3:].strip()
-        
-        # Send message through to channel
-        await message.channel.send('Hello, ' + temp_message + ', I\'m Pulse bot!')
 
     # Get basic clan info 
     if message.content.startswith('!claninfo'):
@@ -387,87 +299,8 @@ Current war participants in clan:
         # Catch missing information
         except KeyError:
             await message.channel.send("This clan either doesn't exist or doesn't do clan war.")
-    if message.content.startswith('!rps'):
             
-        import rock_paper_scissors
-        temp_message = message.content[4:].strip()
-        await message.channel.send(rock_paper_scissors.play(temp_message))
-        
-    # do !message <channel id> <message> to use
-    if message.content.startswith('!message'):
-        if message.author.id == 769880558322188298:
-            temp_message = message.content[8:].split()
-            channel_id = temp_message.pop(0)
-            
-            channel = client.get_channel(int(channel_id))
-            await channel.send (' '.join(temp_message))
-        else:
-            await message.channel.send('Congratulations on finding this secret command. You can\'t use it though')
-     
-    if message.content.startswith('!meme'):
-        try:
-            # use my reddit client module to get meme
-            reddit_meme = reddit_client.get_post('memes')
-            meme_title = reddit_meme.title
-            # get image link
-            meme_image_link = reddit_meme.preview["images"][0]["source"]["url"]
-            
-            # if previous temp image exists
-            if os.path.exists('temp.png'):
-                # delete it
-                os.remove('temp.png')
-            # get image
-            temp_image = requests.get(meme_image_link, allow_redirects=True)
-            # write image in
-            open('temp.png', 'wb').write(temp_image.content)
-            await message.channel.send(meme_title +':',file=discord.File('temp.png'))
-            
-        except:
-            await message.channel.send('Sorry, an unknown error has occured')
-          
-    if message.content.startswith('!news'):
-        try:
-            # use my reddit client module to get news
-            reddit_meme = reddit_client.get_post('news')
-            meme_title = reddit_meme.title
-            # get image link
-            meme_image_link = reddit_meme.preview["images"][0]["source"]["url"]
-            
-            # if previous temp image exists
-            if os.path.exists('temp.png'):
-                # delete it
-                os.remove('temp.png')
-            # get image
-            temp_image = requests.get(meme_image_link, allow_redirects=True)
-            # write image in
-            open('temp.png', 'wb').write(temp_image.content)
-            await message.channel.send(meme_title +':',file=discord.File('temp.png'))
-            
-        except:
-            await message.channel.send('Sorry, an unknown error has occured')
-            
-    if message.content.startswith('!crmeme'):
-        try:
-            # use my reddit client module to get meme
-            reddit_meme = reddit_client.get_post_flair('clashroyale', 'Meme Monday')
-            meme_title = reddit_meme.title
-            # get image link
-            meme_image_link = reddit_meme.preview["images"][0]["source"]["url"]
-            
-            # if previous temp image exists
-            if os.path.exists('temp.png'):
-                # delete it
-                os.remove('temp.png')
-            # get image
-            temp_image = requests.get(meme_image_link, allow_redirects=True)
-            # write image in
-            open('temp.png', 'wb').write(temp_image.content)
-            await message.channel.send(meme_title +':',file=discord.File('temp.png'))
-            
-        except:
-            await message.channel.send('Sorry, an unknown error has occured')
-            
-            
+    # Check if player is bot - using method from Bailey OP's video
     if message.content.startswith('!botcheck'):
         # format message (see above somewhere)
         temp_message = message.content[9:].strip()
@@ -480,8 +313,6 @@ Current war participants in clan:
         # find player
         player = json.loads(requests.get('https://api.clashroyale.com/v1/players/'+temp_message, headers={'Authorization':'Bearer '+clashroyale_TOKEN}).text)
 
-        # check if player is bot - using method from Bailey OP's video
-        
         try:
             # check if player has donations but have never joined a clan
             if player["totalDonations"] > 0 and next(item for item in player["achievements"] if item["name"] == "Team Player")["value"] ==0:
@@ -495,38 +326,6 @@ Current war participants in clan:
         except KeyError:
             await message.channel.send("Warning, Player tag not found!!!!!!!!")
             
-    # Sing never gonna give you up using /tts
-    if message.content.startswith('!sing'):
-        await message.channel.send('Never gonnaaaa give you up.\nNever gonna let u down.\nNever gonna run around and desert u.\nNever gonna make you cry.\nNever gonna say goodbye.\nNever gonna tell a lie and hurt u.', tts=True)
-        
-    # check if message has clashroyale deck url in it 
-    else:
-        regex = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
-        import re
-        url = re.findall(regex,message.content)
-        try:
-            if 'https://link.clashroyale.com/deck/' in url[0][0]:
-                try:
-    
-                    
-                    url= url[0][0][42:]
-                    # go through card infos to find matching card ids to deck and add to list
-                    list_of_cards = url.split(';')
-                    deck_info ='This deck consists of '
-                    for card in list_of_cards:
-                        for card_info in clash_royale_cards:
-                            if int(card[0:8]) == card_info["id"]:
-                                deck_info += card_info["name"] + ', ' 
-                                break
-                    deck_info = deck_info[:-2]
-                    deck_info += '.'
-                    await message.channel.send(deck_info)
-                                
-                except:
-                    pass
-                
-        except IndexError:
-            pass
 client.run(TOKEN)
     
     
