@@ -1,3 +1,4 @@
+config.json*
 visited_submissions.csv*
 temp.png*
 __pycache__/
